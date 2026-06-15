@@ -446,13 +446,13 @@ Backup server apabila terjadi perubahan atau kerusakan pada server utama.
 ## 1. Clone Repository
 
 ```bash
-git clone https://github.com/username/repository.git
+git clone [https://github.com/username/repository.git](https://github.com/noralizaaa/dashboard-sensusku.git)
 ```
 
 ## 2. Masuk Folder Project
 
 ```bash
-cd repository
+cd Coba Server
 ```
 
 ## 3. Install Dependency

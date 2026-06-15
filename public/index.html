@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pendataan Desa</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Socket.IO dari server Node.js -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">
+                <span>⌂</span>
+            </div>
+            <div>
+                <h2>Pendataan Desa</h2>
+                <p>Sistem Informasi Desa</p>
+            </div>
+        </div>
+
+        <nav class="menu">
+            <a class="menu-item active" href="#dashboardHome">
+                <span>⌂</span>
+                Beranda
+            </a>
+
+            <a class="menu-item" href="#" onclick="openAllRowsModal(); return false;">
+                <span>👥</span>
+                Data Keluarga
+            </a>
+
+            <a class="menu-item" href="#" onclick="openPopulationModal(); return false;">
+                <span>🧑‍🤝‍🧑</span>
+                Data Penduduk
+            </a>
+
+            <a class="menu-item" href="#" onclick="openHealthModal(); return false;">
+                <span>❤</span>
+                Rekap Kesehatan
+            </a>
+
+            <a class="menu-item" href="#" onclick="openHouseModal(); return false;">
+                <span>🏠</span>
+                Rekap Rumah
+            </a>
+
+            <a class="menu-item" href="#" onclick="focusMap(); return false;">
+                <span>📍</span>
+                Peta Lokasi
+            </a>
+
+            <a class="menu-item" href="#" onclick="openReportModal(); return false;">
+                <span>📄</span>
+                Laporan
+            </a>
+
+            <a class="menu-item" href="#" onclick="openSettingsModal(); return false;">
+                <span>⚙</span>
+                Pengaturan
+            </a>
+        </nav>
+
+        <div class="secure-box">
+            <div class="secure-icon">🛡</div>
+            <div>
+                <h4>Sistem Aman</h4>
+                <p>Data terenkripsi & aman</p>
+            </div>
+            <span class="status-dot"></span>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main" id="dashboardHome">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div>
+                <h1>Dashboard Pendataan Desa</h1>
+                <p>Selamat datang, Admin! Berikut ringkasan data desa hari ini.</p>
+            </div>
+
+            <div class="topbar-right">
+                <div class="search-box">
+                    <span>🔍</span>
+                    <input type="text" id="searchInput" placeholder="Cari data penduduk, keluarga, RT/RW...">
+                </div>
+
+                <button class="notification-btn" onclick="toggleNotificationPanel()">
+                    🔔
+                    <span id="notificationCount">0</span>
+                </button>
+
+                <div class="notification-panel" id="notificationPanel">
+                    <div class="notification-header">
+                        <h4>Notifikasi</h4>
+                        <button onclick="closeNotificationPanel()">×</button>
+                    </div>
+
+                    <div id="notificationList">
+                        <p class="empty-notification">Belum ada notifikasi</p>
+                    </div>
+                </div>
+
+                <div class="admin-profile">
+                    <div class="avatar">👨🏻‍💼</div>
+                    <span>Admin Desa</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- FILTER -->
+        <section class="filter-row">
+            <div class="filter-card">
+                <label>Periode</label>
+                <input type="month" id="periodFilter">
+            </div>
+
+            <button class="primary-btn" onclick="loadDashboard()">
+                Terapkan Filter
+            </button>
+        </section>
+
+        <!-- STATISTIK UTAMA -->
+        <section class="stat-grid" id="dataPendudukSection">
+            <div class="stat-card">
+                <div class="stat-icon orange-soft">👥</div>
+                <div>
+                    <p>Total KK</p>
+                    <h2 id="totalKK">0</h2>
+                    <span>Keluarga</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon orange-soft">🧑‍🤝‍🧑</div>
+                <div>
+                    <p>Total Penduduk</p>
+                    <h2 id="totalPenduduk">0</h2>
+                    <span>Jiwa</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon yellow-soft">👶</div>
+                <div>
+                    <p>Balita</p>
+                    <h2 id="totalBalita">0</h2>
+                    <span>Jiwa</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon purple-soft">👴</div>
+                <div>
+                    <p>Lansia</p>
+                    <h2 id="totalLansia">0</h2>
+                    <span>Jiwa</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green-soft">👩</div>
+                <div>
+                    <p>Wanita Usia Subur</p>
+                    <h2 id="totalWus">0</h2>
+                    <span>Jiwa</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon orange-soft">👨</div>
+                <div>
+                    <p>Pria Usia Subur</p>
+                    <h2 id="totalPus">0</h2>
+                    <span>Jiwa</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHART DAN REKAP -->
+        <section class="dashboard-grid">
+            <div class="panel age-panel">
+                <div class="panel-header">
+                    <h3>Kategori Usia</h3>
+                </div>
+                <canvas id="ageChart"></canvas>
+            </div>
+
+            <div class="panel gender-panel">
+                <h3>Jenis Kelamin</h3>
+                <div class="gender-layout">
+                    <canvas id="genderChart"></canvas>
+
+                    <div class="legend-list">
+                        <div>
+                            <span class="legend-dot male"></span>
+                            <p>Laki-laki</p>
+                            <strong id="maleCount">0</strong>
+                        </div>
+
+                        <div>
+                            <span class="legend-dot female"></span>
+                            <p>Perempuan</p>
+                            <strong id="femaleCount">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel health-panel" id="rekapKesehatanSection">
+                <h3>Rekap Kesehatan</h3>
+
+                <div class="health-item">
+                    <div class="health-icon pink-soft">🤰</div>
+                    <div>
+                        <h4>Ibu Hamil</h4>
+                        <p>Orang</p>
+                    </div>
+                    <strong id="totalIbuHamilHealth">0</strong>
+                </div>
+
+                <div class="health-item">
+                    <div class="health-icon purple-soft">🏥</div>
+                    <div>
+                        <h4>Posyandu Aktif</h4>
+                        <p>Posyandu</p>
+                    </div>
+                    <strong id="totalPosyanduAktif">0</strong>
+                </div>
+
+                <div class="health-item">
+                    <div class="health-icon yellow-soft">🧷</div>
+                    <div>
+                        <h4>Balita Pakai Pampers</h4>
+                        <p>Anak</p>
+                    </div>
+                    <strong id="totalPampers">0</strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- DATA KELUARGA DAN PETA -->
+        <section class="bottom-grid" id="dataKeluargaSection">
+            <div class="panel table-panel">
+                <div class="panel-header">
+                    <h3>Data Warga Terbaru</h3>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nama KK</th>
+                                <th>RT</th>
+                                <th>RW</th>
+                                <th>Anggota</th>
+                                <th>Status</th>
+                                <th>Kondisi Keluarga</th>
+                                <th>Tanggal Input</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="submissionTable">
+                            <tr>
+                                <td colspan="8" class="empty-text">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel map-panel" id="petaLokasiSection">
+                <div class="panel-header">
+                    <h3>Peta Lokasi Rumah</h3>
+                    <button class="small-btn" onclick="focusMap()">
+                        Lihat Peta Lengkap ›
+                    </button>
+                </div>
+
+                <div id="map"></div>
+            </div>
+        </section>
+
+        <!-- INFO TAMBAHAN -->
+        <section class="info-grid" id="rekapRumahSection">
+            <div class="info-card">
+                <div>✅</div>
+                <div>
+                    <p>Status Data</p>
+                    <h4 id="statusDataAktif">Submitted</h4>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div>📍</div>
+                <div>
+                    <p>Desa Aktif</p>
+                    <h4 id="desaAktif">-</h4>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div>🕒</div>
+                <div>
+                    <p>Terakhir Diperbarui</p>
+                    <h4 id="lastUpdated">-</h4>
+                </div>
+            </div>
+
+            <div class="info-card realtime-card">
+                <div>⚡</div>
+                <div>
+                    <p>Data Realtime</p>
+                    <h4 id="realtimeStatus">Terhubung</h4>
+                </div>
+                <span class="status-dot"></span>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DETAIL -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detail Data Keluarga</h3>
+                <button onclick="closeDetailModal()">×</button>
+            </div>
+
+            <div id="detailContent"></div>
+        </div>
+    </div>
+
+    <!-- MODAL SEMUA DATA WARGA -->
+    <div class="modal" id="allRowsModal">
+        <div class="modal-content all-rows-modal-content">
+            <div class="modal-header">
+                <h3>Semua Data Warga</h3>
+                <button onclick="closeAllRowsModal()">×</button>
+            </div>
+
+            <div class="all-rows-info">
+                <p id="allRowsTotal">Total data: 0</p>
+                <input type="text" id="allRowsSearchInput" placeholder="Cari nama KK, No KK, RT/RW, alamat...">
+            </div>
+
+            <div class="all-rows-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama KK</th>
+                            <th>RT</th>
+                            <th>RW</th>
+                            <th>Anggota</th>
+                            <th>Status</th>
+                            <th>Kondisi Keluarga</th>
+                            <th>Tanggal Input</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="allRowsTable">
+                        <tr>
+                            <td colspan="8" class="empty-text">Memuat data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PETA LENGKAP -->
+    <div class="modal" id="mapModal">
+        <div class="modal-content map-modal-content">
+            <div class="modal-header">
+                <h3>Peta Lokasi Rumah Lengkap</h3>
+                <button onclick="closeMapModal()">×</button>
+            </div>
+
+            <div id="fullMap"></div>
+        </div>
+    </div>
+
+    <!-- MODAL LAPORAN -->
+    <div class="modal" id="reportModal">
+        <div class="modal-content report-modal-content">
+            <div class="modal-header">
+                <h3>Unduh Laporan Pendataan Desa</h3>
+                <button onclick="closeReportModal()">×</button>
+            </div>
+
+            <div class="report-filter-grid">
+                <div class="report-filter-item">
+                    <label>Jenis Laporan</label>
+                    <select id="reportType">
+                        <option value="lengkap">Laporan Lengkap</option>
+                        <option value="keluarga">Data Keluarga</option>
+                        <option value="penduduk">Data Penduduk</option>
+                        <option value="kesehatan">Rekap Kesehatan</option>
+                        <option value="lokasi">Data Lokasi Rumah</option>
+                    </select>
+                </div>
+
+                <div class="report-filter-item">
+                    <label>Periode</label>
+                    <input type="month" id="reportPeriod">
+                </div>
+
+                <div class="report-filter-item">
+                    <label>RT</label>
+                    <input type="text" id="reportRtFilter" placeholder="Contoh: 01">
+                </div>
+
+                <div class="report-filter-item">
+                    <label>Pencarian</label>
+                    <input type="text" id="reportSearch" placeholder="Nama KK, No KK, alamat...">
+                </div>
+            </div>
+
+            <div class="report-action-row">
+                <div>
+                    <p id="reportPreviewInfo">Total data preview: 0</p>
+                    <small>Preview hanya menampilkan maksimal 10 data pertama.</small>
+                </div>
+
+                <div class="report-buttons">
+                    <button class="small-btn" onclick="resetReportFilter()">Reset</button>
+                    <button class="primary-btn" onclick="downloadReportCSV()">Unduh CSV</button>
+                </div>
+            </div>
+
+            <div class="report-preview-wrapper">
+                <table>
+                    <thead id="reportPreviewHead">
+                        <tr>
+                            <th>Nama KK</th>
+                            <th>RT</th>
+                            <th>RW</th>
+                            <th>Anggota</th>
+                            <th>Status</th>
+                            <th>Tanggal Input</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="reportPreviewBody">
+                        <tr>
+                            <td colspan="6" class="empty-text">Belum ada data preview</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DATA PENDUDUK -->
+    <div class="modal" id="populationModal">
+        <div class="modal-content population-modal-content">
+            <div class="modal-header">
+                <h3>Data Penduduk</h3>
+                <button onclick="closePopulationModal()">×</button>
+            </div>
+
+            <div class="population-summary-grid">
+                <div class="population-summary-card">
+                    <p>Total Penduduk</p>
+                    <h4 id="populationTotal">0</h4>
+                </div>
+
+                <div class="population-summary-card">
+                    <p>Laki-laki</p>
+                    <h4 id="populationMale">0</h4>
+                </div>
+
+                <div class="population-summary-card">
+                    <p>Perempuan</p>
+                    <h4 id="populationFemale">0</h4>
+                </div>
+
+                <div class="population-summary-card">
+                    <p>Balita</p>
+                    <h4 id="populationBalita">0</h4>
+                </div>
+
+                <div class="population-summary-card">
+                    <p>Lansia</p>
+                    <h4 id="populationLansia">0</h4>
+                </div>
+            </div>
+
+            <div class="population-filter-grid">
+                <div class="population-filter-item">
+                    <label>Jenis Kelamin</label>
+                    <select id="populationGenderFilter">
+                        <option value="semua">Semua</option>
+                        <option value="laki">Laki-laki</option>
+                        <option value="perempuan">Perempuan</option>
+                    </select>
+                </div>
+
+                <div class="population-filter-item">
+                    <label>Kategori Usia</label>
+                    <select id="populationAgeFilter">
+                        <option value="semua">Semua</option>
+                        <option value="balita">Balita</option>
+                        <option value="anak">Anak-anak</option>
+                        <option value="remaja">Remaja</option>
+                        <option value="dewasa">Dewasa</option>
+                        <option value="lansia">Lansia</option>
+                        <option value="wus">WUS</option>
+                        <option value="pus">PUS</option>
+                    </select>
+                </div>
+
+                <div class="population-filter-item">
+                    <label>RT</label>
+                    <input type="text" id="populationRtFilter" placeholder="Contoh: 01">
+                </div>
+
+                <div class="population-filter-item">
+                    <label>Pencarian</label>
+                    <input type="text" id="populationSearchInput" placeholder="Cari nama, NIK, nama KK...">
+                </div>
+            </div>
+
+            <div class="population-info-row">
+                <p id="populationTotalText">Total data: 0</p>
+                <button class="small-btn" onclick="resetPopulationFilter()">Reset Filter</button>
+            </div>
+
+            <div class="population-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama Penduduk</th>
+                            <th>NIK</th>
+                            <th>Jenis Kelamin</th>
+                            <th>Umur</th>
+                            <th>Kategori</th>
+                            <th>Hubungan Keluarga</th>
+                            <th>RT</th>
+                            <th>RW</th>
+                            <th>Nama KK</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="populationTable">
+                        <tr>
+                            <td colspan="9" class="empty-text">Memuat data penduduk...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL REKAP KESEHATAN -->
+    <div class="modal" id="healthModal">
+        <div class="modal-content health-modal-content">
+            <div class="modal-header">
+                <h3>Rekap Kesehatan</h3>
+                <button onclick="closeHealthModal()">×</button>
+            </div>
+
+            <div class="health-summary-grid">
+                <div class="health-summary-card">
+                    <div class="health-summary-icon pink-soft">🤰</div>
+                    <div>
+                        <p>Ibu Hamil</p>
+                        <h4 id="healthModalIbuHamil">0</h4>
+                    </div>
+                </div>
+
+                <div class="health-summary-card">
+                    <div class="health-summary-icon purple-soft">♿</div>
+                    <div>
+                        <p>Disabilitas</p>
+                        <h4 id="healthModalDisabilitas">0</h4>
+                    </div>
+                </div>
+
+                <div class="health-summary-card">
+                    <div class="health-summary-icon orange-soft">🏥</div>
+                    <div>
+                        <p>Penyakit Kronis</p>
+                        <h4 id="healthModalSakitKronis">0</h4>
+                    </div>
+                </div>
+
+                <div class="health-summary-card">
+                    <div class="health-summary-icon yellow-soft">👶</div>
+                    <div>
+                        <p>Balita</p>
+                        <h4 id="healthModalBalita">0</h4>
+                    </div>
+                </div>
+
+                <div class="health-summary-card">
+                    <div class="health-summary-icon purple-soft">👴</div>
+                    <div>
+                        <p>Lansia</p>
+                        <h4 id="healthModalLansia">0</h4>
+                    </div>
+                </div>
+
+                <div class="health-summary-card">
+                    <div class="health-summary-icon green-soft">🧷</div>
+                    <div>
+                        <p>Pampers</p>
+                        <h4 id="healthModalPampers">0</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="health-filter-grid">
+                <div class="health-filter-item">
+                    <label>Kategori Kesehatan</label>
+                    <select id="healthCategoryFilter">
+                        <option value="semua">Semua</option>
+                        <option value="ibu_hamil">Ibu Hamil</option>
+                        <option value="disabilitas">Disabilitas</option>
+                        <option value="sakit_kronis">Penyakit Kronis</option>
+                        <option value="balita">Balita</option>
+                        <option value="lansia">Lansia</option>
+                        <option value="pampers">Pakai Pampers</option>
+                        <option value="posyandu">Aktif Posyandu</option>
+                    </select>
+                </div>
+
+                <div class="health-filter-item">
+                    <label>RT</label>
+                    <input type="text" id="healthRtFilter" placeholder="Contoh: 01">
+                </div>
+
+                <div class="health-filter-item">
+                    <label>Pencarian</label>
+                    <input type="text" id="healthSearchInput" placeholder="Cari nama KK, No KK, alamat...">
+                </div>
+            </div>
+
+            <div class="health-info-row">
+                <p id="healthTotalText">Total data kesehatan: 0</p>
+
+                <div class="health-action-buttons">
+                    <button class="small-btn" onclick="resetHealthFilter()">Reset Filter</button>
+                    <button class="primary-btn" onclick="downloadHealthReportCSV()">Unduh Rekap Kesehatan</button>
+                </div>
+            </div>
+
+            <div class="health-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama KK</th>
+                            <th>RT</th>
+                            <th>RW</th>
+                            <th>Ibu Hamil</th>
+                            <th>Disabilitas</th>
+                            <th>Jenis Disabilitas</th>
+                            <th>Penyakit Kronis</th>
+                            <th>Jenis Penyakit Kronis</th>
+                            <th>Balita</th>
+                            <th>Lansia</th>
+                            <th>Pampers</th>
+                            <th>Posyandu</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="healthTable">
+                        <tr>
+                            <td colspan="13" class="empty-text">Memuat data kesehatan...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL REKAP RUMAH -->
+    <div class="modal" id="houseModal">
+        <div class="modal-content house-modal-content">
+            <div class="modal-header">
+                <h3>Rekap Rumah</h3>
+                <button onclick="closeHouseModal()">×</button>
+            </div>
+
+            <div class="house-summary-grid house-summary-grid-4">
+                <div class="house-summary-card">
+                    <div class="house-summary-icon orange-soft">🏠</div>
+                    <div>
+                        <p>Total Rumah</p>
+                        <h4 id="houseModalTotal">0</h4>
+                    </div>
+                </div>
+
+                <div class="house-summary-card">
+                    <div class="house-summary-icon purple-soft">📍</div>
+                    <div>
+                        <p>Lokasi Lengkap</p>
+                        <h4 id="houseModalLokasiLengkap">0</h4>
+                    </div>
+                </div>
+
+                <div class="house-summary-card">
+                    <div class="house-summary-icon yellow-soft">📌</div>
+                    <div>
+                        <p>Tanpa Lokasi</p>
+                        <h4 id="houseModalTanpaLokasi">0</h4>
+                    </div>
+                </div>
+
+                <div class="house-summary-card">
+                    <div class="house-summary-icon green-soft">📷</div>
+                    <div>
+                        <p>Ada Foto</p>
+                        <h4 id="houseModalAdaFoto">0</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="house-filter-grid">
+                <div class="house-filter-item">
+                    <label>Kondisi Rumah</label>
+                    <select id="houseConditionFilter">
+                        <option value="semua">Semua</option>
+                        <option value="layak">Layak Huni</option>
+                        <option value="tidak_layak">Tidak Layak Huni</option>
+                        <option value="baik">Baik</option>
+                        <option value="sedang">Sedang</option>
+                        <option value="rusak">Rusak</option>
+                    </select>
+                </div>
+
+                <div class="house-filter-item">
+                    <label>Status Lokasi</label>
+                    <select id="houseLocationFilter">
+                        <option value="semua">Semua</option>
+                        <option value="lengkap">Lokasi Lengkap</option>
+                        <option value="belum">Belum Ada Lokasi</option>
+                    </select>
+                </div>
+
+                <div class="house-filter-item">
+                    <label>Status Foto</label>
+                    <select id="housePhotoFilter">
+                        <option value="semua">Semua</option>
+                        <option value="ada">Ada Foto</option>
+                        <option value="belum">Belum Ada Foto</option>
+                    </select>
+                </div>
+
+                <div class="house-filter-item">
+                    <label>RT</label>
+                    <input type="text" id="houseRtFilter" placeholder="Contoh: 01">
+                </div>
+
+                <div class="house-filter-item house-search-item">
+                    <label>Pencarian</label>
+                    <input type="text" id="houseSearchInput" placeholder="Cari nama KK, No KK, alamat...">
+                </div>
+            </div>
+
+            <div class="house-info-row">
+                <p id="houseTotalText">Total data rumah: 0</p>
+
+                <div class="house-action-buttons">
+                    <button class="small-btn" onclick="resetHouseFilter()">Reset Filter</button>
+                    <button class="primary-btn" onclick="downloadHouseReportCSV()">Unduh Rekap Rumah</button>
+                </div>
+            </div>
+
+            <div class="house-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama KK</th>
+                            <th>RT</th>
+                            <th>RW</th>
+                            <th>Alamat</th>
+                            <th>Status Rumah</th>
+                            <th>Sumber Air</th>
+                            <th>Jamban</th>
+                            <th>Listrik</th>
+                            <th>Foto</th>
+                            <th>Lokasi</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="houseTable">
+                        <tr>
+                            <td colspan="10" class="empty-text">Memuat data rumah...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PENGATURAN -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h3>Pengaturan Dashboard</h3>
+                <button onclick="closeSettingsModal()">×</button>
+            </div>
+
+            <div class="settings-modal-grid">
+                <div class="settings-modal-card">
+                    <div class="settings-modal-icon orange-soft">🏘️</div>
+                    <div>
+                        <p>Nama Desa</p>
+                        <h4 id="settingsModalVillageName">-</h4>
+                        <small>Desa aktif pada dashboard</small>
+                    </div>
+                </div>
+
+                <div class="settings-modal-card">
+                    <div class="settings-modal-icon pink-soft">👨🏻‍💼</div>
+                    <div>
+                        <p>Admin Aktif</p>
+                        <h4 id="settingsModalAdminName">Admin Desa</h4>
+                        <small>Pengguna yang sedang membuka dashboard</small>
+                    </div>
+                </div>
+
+                <div class="settings-modal-card">
+                    <div class="settings-modal-icon purple-soft">🔐</div>
+                    <div>
+                        <p>Role Admin</p>
+                        <h4 id="settingsModalAdminRole">Admin Desa</h4>
+                        <small>Hak akses dashboard</small>
+                    </div>
+                </div>
+
+                <div class="settings-modal-card">
+                    <div class="settings-modal-icon yellow-soft">📅</div>
+                    <div>
+                        <p>Periode Aktif</p>
+                        <h4 id="settingsModalPeriod">-</h4>
+                        <small>Periode data yang sedang ditampilkan</small>
+                    </div>
+                </div>
+
+                <div class="settings-modal-card">
+                    <div class="settings-modal-icon green-soft">⚡</div>
+                    <div>
+                        <p>Status Realtime</p>
+                        <h4 id="settingsModalRealtime">Terhubung</h4>
+                        <small>Sinkronisasi data otomatis</small>
+                    </div>
+                </div>
+
+                <div class="settings-modal-card">
+                    <div class="settings-modal-icon orange-soft">🕒</div>
+                    <div>
+                        <p>Terakhir Diperbarui</p>
+                        <h4 id="settingsModalLastUpdated">-</h4>
+                        <small>Waktu terakhir dashboard dimuat</small>
+                    </div>
+                </div>
+
+                <div class="settings-modal-card">
+                    <div class="settings-modal-icon purple-soft">📋</div>
+                    <div>
+                        <p>Preview Data</p>
+                        <h4 id="settingsModalPreview">5 data</h4>
+                        <small>Jumlah data terbaru di beranda</small>
+                    </div>
+                </div>
+
+                <div class="settings-modal-card">
+                    <div class="settings-modal-icon green-soft">🧾</div>
+                    <div>
+                        <p>Format Laporan</p>
+                        <h4>CSV</h4>
+                        <small>Laporan dapat diunduh berdasarkan filter periode</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-note">
+                <div>ℹ️</div>
+                <p>
+                    Pengaturan ini bersifat informasi dasar dashboard. Untuk perubahan data desa, periode, atau akun admin,
+                    pengaturan dapat dikembangkan nanti melalui backend.
+                </p>
+            </div>
+
+            <div class="settings-action-row">
+                <button class="small-btn" onclick="closeSettingsModal()">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
